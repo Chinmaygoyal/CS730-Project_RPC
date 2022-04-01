@@ -7,7 +7,7 @@
 #define PAGE_SIZE (1 << 12)
 
 int main(){
-    int fd = open("test_file.txt", O_RDWR);
+    int fd = open("test_file.txt", O_RDWR | O_CREAT);
     int shm_id = shmget(key, PAGE_SIZE, IPC_CREAT | 0600);
     void* mem = shmat(shm_id, NULL, 0);
     // void* mem = shmat(shm_id, NULL, SHM_RDONLY);
