@@ -17,17 +17,17 @@ int main(){
    int pid = fork();
    
    if (pid == 0) { // child process
-      // *(int *)mem = 89; 
+      *(int *)mem = 89; 
       printf("%d\n", *(int *)mem);
       shmdt(mem);
-      return 0; 
+      return 0;
    } else { // parent process
-      // wait(NULL);
+      wait(NULL);
       printf("%d\n", *(int *)mem);
-      while (1){}
+      // while (1){}
       shmdt(mem);
       shmctl(shmid, IPC_RMID, NULL);
-      return 0; 
+      return 0;
    }
 
    return 0;
