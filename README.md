@@ -9,3 +9,19 @@ read, and vice-versa, or bidirectional, i.e., both the parent and child can upda
 the updated values. As we know, it can also be achieved with the help of the shared
 memory construct. Hence, we will compare sfork with shared memory to study the
 effectiveness.
+
+## Usage
+To build user libraries and tests:
+```bash
+# in root of repo
+make
+```
+
+Test binaries are generated in `bin/` directory.
+
+To build and load kernel module:
+```bash
+# inside the Module/ dir
+make
+sudo insmod $sfork.ko
+```
