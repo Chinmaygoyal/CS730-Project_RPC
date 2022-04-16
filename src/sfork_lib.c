@@ -7,6 +7,35 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#define CHILD_WRITE 1
+#define PARENT_WRITE 1
+
+struct pid_node{
+    pid_t pid;
+    struct pid_node* next;
+};
+
+struct meta_page{
+    int ref_count;
+    struct pid_node* head;
+};
+
+void add_to_last(struct meta_page, pid_t pid){
+    struct pid_node* cnode = meta_page.head;
+    if(!head){
+        head = kmalloc(sizeof(pid_node));
+        head.pid = pid;
+        head.next = NULL;
+    }else{
+        while(cnode->next != NULL) cnode = cnode->next;
+        cnode->next = kmalloc(sizeof(pid_node));
+        cnode = cnode->next;
+        cnode.pid = pid;
+        cnode.next = NULL;
+    }
+    return;
+}
+
 int create_handle()
 {
     int fd = open("/dev/sfork_dev", O_RDWR);
@@ -20,11 +49,11 @@ void close_handle(int cdev)
 }
 
 /*
-Main function to perform sfork.
+    Function to perform sfork with file backed mappings.
     size: The size of the shared memory between child and parent
     direction: Unidirectional or Bidirectional
 */
-int sfork(size_t len, unsigned int flags, void **paddr)
+int sfork_file(size_t len, unsigned int flags, void **paddr)
 {
     /*
     Call fork from parent and then initialize the memory of the child and the parent
@@ -63,4 +92,57 @@ int sfork(size_t len, unsigned int flags, void **paddr)
     pid = fork();
 
     return pid;
+}
+
+/*
+    Main function to perform sfork.
+    size: The size of the shared memory between child and parent
+    direction: Unidirectional or Bidirectional
+*/
+int sfork(size_t len, unsigned int flags, void **paddr)
+{
+    if(!flags){
+        printf("Atleast one of parent or child should have write permission\n");
+        return -1;
+    }
+
+    len += 4096;
+
+    void* addr = mmap(NULL,len, PROT_READ, MAP_SFORK | MAP_PRIVATE,-1,0);
+    int direction = (int)*flags;
+    
+    struct meta_page;
+    meta_page.ref_count = 2;
+
+    int pid = fork();
+    /* First give write permissions to the correct process
+    Then write 2 and the corresponding process ids to the first page
+    */
+    struct vm_area_struct* vma = find_vma(current->mm,addr);
+
+    if(pid == 0){
+        // child process
+        if(direction & 1){
+            //child has the write permissions
+            mprotect(addr,len,PROT_READ | PROT_WRITE);
+        }
+        
+        if((direction & 1) && !(direction & 2)){
+            // only child has the write permissions
+            add_to_last(meta_page,current->ppid);
+            add_to_last(meta_page,current->pid);    
+            *addr = meta_page;
+        }
+
+    }else{
+        if(direction & 2){
+            // parent has the write permission
+            mprotect(addr,len,PROT_READ | PROT_WRITE);
+            add_to_last(meta_page,current->pid);
+            add_to_last(meta_page,pid);
+            *addr = meta_page;
+        }
+        // parent proces
+    }
+    return 0;
 }
