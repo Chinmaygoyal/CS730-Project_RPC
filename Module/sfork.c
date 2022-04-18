@@ -50,13 +50,12 @@ static ssize_t sfork_read(struct file *filp, char *buffer, size_t length, loff_t
 
 static ssize_t sfork_write(struct file *filp, const char *buff, size_t len, loff_t * off)
 {
-        return 0;
-        // printk(KERN_INFO "In write\n");
-        // if(copy_from_user(&gptr,buff,sizeof(unsigned long)) == 0){
-        //     printk("The copied value is: %ld",gptr);
-        //     return sizeof(unsigned long);
-        // }
-        // return -1;
+        int target_pid = len;
+        void* virtual_addr = *((long*)buff);
+        printk("Target_pid = %d\n",target_pid);
+        printk("Virtual_address = %px\n",virtual_addr);
+        // get the task struct for target_id and change the value of 
+        return 1;
 }
 
 static struct file_operations fops = {
