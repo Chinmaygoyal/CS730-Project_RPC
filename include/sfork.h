@@ -3,6 +3,8 @@
 
 #include <sys/types.h>
 
+int sfork_file(size_t len, unsigned int flags, void **paddr);
+
 int sfork(size_t len, unsigned int flags, void **addr);
 
 #endif

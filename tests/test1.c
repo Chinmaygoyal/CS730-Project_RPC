@@ -1,11 +1,12 @@
 #include<stdio.h>
 #include<sfork.h>
+#include <sys/wait.h>
 
 int main()
 {
     void *ptr;
     int n = 101;
-    int pid = sfork((n+1)* sizeof(int), 0, &ptr);
+    int pid = sfork((n+1)* sizeof(int), 3, &ptr);
     
     if(pid < 0)
     {
@@ -14,16 +15,17 @@ int main()
     }
     else if(pid)
     {
-        int *arr = (int *) ptr;
-        arr[n] = 0;
-        while(arr[n] == 0);
-        printf("Parent: Computing sum\n");
-        int sum = 0;
-        for(int i = 0; i < n; i++)
-            sum += arr[i];
-        arr[0] = sum;
-        arr[n] = 0;
-        printf("parent addr = %p\n", ptr);
+        wait(NULL);
+        // int *arr = (int *) ptr;
+        // arr[n] = 0;
+        // while(arr[n] == 0);
+        // printf("Parent: Computing sum\n");
+        // int sum = 0;
+        // for(int i = 0; i < n; i++)
+        //     sum += arr[i];
+        // arr[0] = sum;
+        // arr[n] = 0;
+        // printf("parent addr = %p\n", ptr);
     }
     else
     {
@@ -32,7 +34,7 @@ int main()
         for(int i = 0; i < n; i++)
             arr[i] = i;
         arr[n] = 1;
-        while(arr[n] == 1);
+        // while(arr[n] == 1);
         printf("Child: Sum of numbers: %d\n", arr[0]);
         printf("child addr = %p\n", ptr);
     }

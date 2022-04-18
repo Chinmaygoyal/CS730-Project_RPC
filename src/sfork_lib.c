@@ -9,6 +9,7 @@
 
 #define CHILD_WRITE 1
 #define PARENT_WRITE 1
+#define MAP_SFORK 	0x200
 
 struct pid_node{
     pid_t pid;
@@ -20,18 +21,18 @@ struct meta_page{
     struct pid_node* head;
 };
 
-void add_to_last(struct meta_page, pid_t pid){
-    struct pid_node* cnode = meta_page.head;
-    if(!head){
-        head = kmalloc(sizeof(pid_node));
-        head.pid = pid;
-        head.next = NULL;
+void add_to_last(struct meta_page* mp, pid_t pid){
+    struct pid_node* cnode = mp->head;
+    if(!cnode){
+        mp->head = malloc(sizeof(struct pid_node));
+        mp->head->pid = pid;
+        mp->head->next = NULL;
     }else{
         while(cnode->next != NULL) cnode = cnode->next;
-        cnode->next = kmalloc(sizeof(pid_node));
+        cnode->next = malloc(sizeof(struct pid_node));
         cnode = cnode->next;
-        cnode.pid = pid;
-        cnode.next = NULL;
+        cnode->pid = pid;
+        cnode->next = NULL;
     }
     return;
 }
@@ -108,17 +109,16 @@ int sfork(size_t len, unsigned int flags, void **paddr)
 
     len += 4096;
 
-    void* addr = mmap(NULL,len, PROT_READ, MAP_SFORK | MAP_PRIVATE,-1,0);
-    int direction = (int)*flags;
+    void* addr = mmap(NULL,len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SFORK, -1, 0);
+    int direction = flags;
     
-    struct meta_page;
-    meta_page.ref_count = 2;
+    struct meta_page mp;
+    mp.ref_count = 2;
 
     int pid = fork();
     /* First give write permissions to the correct process
     Then write 2 and the corresponding process ids to the first page
     */
-    struct vm_area_struct* vma = find_vma(current->mm,addr);
 
     if(pid == 0){
         // child process
@@ -129,20 +129,20 @@ int sfork(size_t len, unsigned int flags, void **paddr)
         
         if((direction & 1) && !(direction & 2)){
             // only child has the write permissions
-            add_to_last(meta_page,current->ppid);
-            add_to_last(meta_page,current->pid);    
-            *addr = meta_page;
+            add_to_last(&mp,getppid());
+            add_to_last(&mp,getppid());    
+            *(struct  meta_page*)addr = mp;
         }
 
     }else{
         if(direction & 2){
             // parent has the write permission
             mprotect(addr,len,PROT_READ | PROT_WRITE);
-            add_to_last(meta_page,current->pid);
-            add_to_last(meta_page,pid);
-            *addr = meta_page;
+            add_to_last(&mp,getpid());
+            add_to_last(&mp,pid);
+            *(struct  meta_page*)addr = mp;
         }
         // parent proces
     }
-    return 0;
+    return pid;
 }
