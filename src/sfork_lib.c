@@ -110,6 +110,8 @@ int sfork(size_t len, unsigned int flags, void **paddr)
     len += 4096;
 
     void* addr = mmap(NULL,len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SFORK, -1, 0);
+    printf("%p\n",addr);
+    *paddr = addr + 4096;
     int direction = flags;
     
     struct meta_page mp;
@@ -122,6 +124,7 @@ int sfork(size_t len, unsigned int flags, void **paddr)
 
     if(pid == 0){
         // child process
+        printf("In the child process\n");
         if(direction & 1){
             //child has the write permissions
             mprotect(addr,len,PROT_READ | PROT_WRITE);

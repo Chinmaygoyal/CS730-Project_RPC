@@ -7,7 +7,6 @@ int main()
     void *ptr;
     int n = 101;
     int pid = sfork((n+1)* sizeof(int), 3, &ptr);
-    
     if(pid < 0)
     {
         printf("fork failed!\n");
