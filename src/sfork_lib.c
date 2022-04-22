@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
+
 
 #define MAP_SFORK 	0x200
 
@@ -33,6 +35,15 @@ void add_to_last(struct meta_page* mp, pid_t pid){
         cnode->next = NULL;
     }
     return;
+}
+
+void print_metapage(struct meta_page* mp){
+    printf("The ref count is: %d\n", mp->ref_count);
+    struct pid_node* c_node = mp->head;
+    while(c_node){
+        printf("The pid: %d\n",c_node->pid);
+        c_node = c_node->next;
+    }
 }
 
 int create_handle()
@@ -106,78 +117,30 @@ int sfork(size_t len, unsigned int flags, void **paddr)
         return -1;
     }
 
-    len += 4096;
-
-    void* addr = mmap(NULL,len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SFORK | MAP_POPULATE, -1, 0);
-    printf("%p\n",addr);
-    *paddr = addr + 4096;
+    void* addr = mmap(NULL,len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SFORK, -1, 0);
+    *paddr = addr;
     int direction = flags;
     
-    struct meta_page mp;
-    mp.ref_count = 2;
-    // add_to_last(&mp,getpid());
-    // *(struct  meta_page*)addr = mp;
-
-    *(int*)addr = 5;
-    
+    printf("%px\n",addr);
+    int fd = open("/dev/sfork_dev", O_RDWR);
+    write(fd,&addr,8);
     int pid = fork();
-    /* First give write permissions to the correct process
-    Then write 2 and the corresponding process ids to the first page
-    */
-
     return pid;
 
-    if(pid == 0){
-        // child process
+    if(pid == 0) {
+
+        printf("Child PID: %d\n",getpid());
+        sleep(2);
+        write(fd,&addr,8);
         printf("In the child process\n");
-        int value = *(int *)addr;
-        printf("Value from child_1:%d\n",value);
-
-        *(int*)addr = 10;
-        printf("Value from child_2:%d\n",*(int *)addr);
-
-        // if(direction & 1){
-        //     //child has the write permissions
-        //     printf("Changing the permission for the child\n");
-        //     mprotect(addr,len,PROT_READ | PROT_WRITE);
-        // }
-        
-        // if((direction & 1) && !(direction & 2)){
-        //     // only child has the write permissions
-        //     add_to_last(&mp,getppid());
-        //     add_to_last(&mp,getppid());    
-        //     *(struct  meta_page*)addr = mp;
-        //     // allocate the same page to parent
-        // }
-        // sleep(1);
-
-    }else{
-        printf("In the parent process\n");
+        *(int*)addr = 20;
+        printf("Updated value from child_2:%d\n",*(int *)addr);
+    } else {
         wait(NULL);
-        
+        write(fd,&addr,8);
+        printf("In the parent process\n");
         int value = *(int *)addr;
         printf("Value from parent_1:%d\n",value);
-        
-        // if(direction & 2){
-        //     // parent has the write permission
-        //     printf("Changing the permission for the parent\n");
-        //     mprotect(addr,len,PROT_READ | PROT_WRITE);
-        //     add_to_last(&mp,getpid());
-        //     add_to_last(&mp,pid);
-        //     *(struct  meta_page*)addr = mp;
-        //     struct meta_page temp = *(struct  meta_page*)addr;
-        //     printf("Ref_count: %d\n",temp.ref_count);
-        //     printf("PID_parent_metapage: %d\n",temp.head->pid);
-        //     printf("PID_child_metapage: %d\n",temp.head->next->pid);
-        //     printf("Original PID:%d\n",getpid());
-        //     printf("Original CHILD_PID:%d\n",pid);
-        //     // allocate the same page to child
-
-        //     // virtual address
-        //     // child pid
-        //     int ret = write(create_handle(),&(addr),pid);
-        // }
-        // parent proces
     }
     return pid;
 }

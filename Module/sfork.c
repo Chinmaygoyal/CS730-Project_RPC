@@ -50,11 +50,22 @@ static ssize_t sfork_read(struct file *filp, char *buffer, size_t length, loff_t
 
 static ssize_t sfork_write(struct file *filp, const char *buff, size_t len, loff_t * off)
 {
-        int target_pid = len;
-        void* virtual_addr = *((long*)buff);
-        printk("Target_pid = %d\n",target_pid);
-        printk("Virtual_address = %px\n",virtual_addr);
-        // get the task struct for target_id and change the value of 
+        void* addr = *(long*)buff;
+        printk("Address in Kenel Module: %px\n",addr);
+        printk("Current process pid: %d\n", current->pid);
+        struct vm_area_struct* vma = find_vma(current->mm,addr);
+
+        if(!vma->sa) printk("No shared area in module\n");
+        else{
+                printk("Inside write and the else case\n");
+                // trying to print the entire shared_area;
+                struct pid_node* c_node = vma->sa->head;
+                while(c_node){
+                        if(c_node->tsk)
+                                printk("PID: %d\n",c_node->tsk->pid);
+                        c_node = c_node->next;
+                }
+        }
         return 1;
 }
 
