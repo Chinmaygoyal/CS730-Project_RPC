@@ -40,6 +40,10 @@ int main(int argc, char* argv[])
     }else if(num == 3){
         // sfork
         pid = sfork(n, CHILD_WRITE | PARENT_WRITE, &ptr); // 8 MB
+    }else if(num == 4){
+        int shmid = shmget(IPC_PRIVATE, n, IPC_CREAT | 0600);
+        ptr = shmat(shmid, NULL, 0);
+        pid = fork();
     }
 
     if(pid < 0)
