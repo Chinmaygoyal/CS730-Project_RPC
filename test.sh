@@ -9,7 +9,7 @@ fi
 
 echo "Test file: $1"
 
-for i in 4
+for i in 1 2 3
 do
-    ./bin/$1 $i
+    time ./bin/$1 $i >> 
 done
