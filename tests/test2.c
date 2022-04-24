@@ -1,12 +1,27 @@
 #include<stdio.h>
 #include<sfork.h>
+#include<stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
 #define PAGE_SIZE 4096
 
-int main()
+int main(int argc, char* argv[])
 {
+
+    if(argc < 2){
+        printf("Please tell which implementation of sfork to use\n");
+        return 0;
+    }
+
+    char *a = argv[1];
+    int num = atoi(a);
+    if(num > 3){
+        printf("Not a valid argument\n");
+        return 0;
+    }
+
+
     void *ptr;
     int np = 600; // 
     /* 
@@ -17,7 +32,18 @@ int main()
      * other way to get if the mm is valid or not
      */
     int n = np * PAGE_SIZE; // 10 pages
-    int pid = sfork((n + 1)* sizeof(char), CHILD_WRITE | PARENT_WRITE, &ptr);
+    int pid;
+    
+    if(num == 1){
+        // sfork_file
+        pid = sfork_file((n + 1)* sizeof(char), CHILD_WRITE | PARENT_WRITE , &ptr); // 1 GB
+    }else if(num == 2){
+        // sfork_populate
+        pid = sfork((n + 1)* sizeof(char), CHILD_WRITE | PARENT_WRITE | SFORK_POPULATE , &ptr); // 1 GB
+    }else if(num == 3){
+        // sfork
+        pid = sfork((n + 1)* sizeof(char), CHILD_WRITE | PARENT_WRITE, &ptr); // 1 GB
+    }
     
     if(pid < 0)
     {
