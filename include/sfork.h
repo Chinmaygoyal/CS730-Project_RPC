@@ -3,8 +3,9 @@
 
 #include <sys/types.h>
 
-#define CHILD_WRITE 1
-#define PARENT_WRITE 2
+#define CHILD_WRITE 0x1
+#define PARENT_WRITE 0x2
+#define SFORK_POPULATE 0x4
 
 int sfork_file(size_t len, unsigned int flags, void **paddr);
 

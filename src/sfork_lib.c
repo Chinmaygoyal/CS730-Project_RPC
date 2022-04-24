@@ -7,56 +7,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
-
-
-#define MAP_SFORK 	0x200
-
-struct pid_node{
-    pid_t pid;
-    struct pid_node* next;
-};
-
-struct meta_page{
-    int ref_count;
-    struct pid_node* head;
-};
-
-void add_to_last(struct meta_page* mp, pid_t pid){
-    struct pid_node* cnode = mp->head;
-    if(!cnode){
-        mp->head = malloc(sizeof(struct pid_node));
-        mp->head->pid = pid;
-        mp->head->next = NULL;
-    }else{
-        while(cnode->next != NULL) cnode = cnode->next;
-        cnode->next = malloc(sizeof(struct pid_node));
-        cnode = cnode->next;
-        cnode->pid = pid;
-        cnode->next = NULL;
-    }
-    return;
-}
-
-void print_metapage(struct meta_page* mp){
-    printf("The ref count is: %d\n", mp->ref_count);
-    struct pid_node* c_node = mp->head;
-    while(c_node){
-        printf("The pid: %d\n",c_node->pid);
-        c_node = c_node->next;
-    }
-}
-
-int create_handle()
-{
-    int fd = open("/dev/sfork_dev", O_RDWR);
-    return fd;
-}
-
-void close_handle(int cdev)
-{
-    close(cdev);
-    return;
-}
+#include <sfork.h>
 
 /*
     Function to perform sfork with file backed mappings.
@@ -101,6 +52,28 @@ int sfork_file(size_t len, unsigned int flags, void **paddr)
 
     pid = fork();
 
+    /*
+    * change the protections for parent and child processes
+    */
+
+    if(pid != 0){
+        // parent process
+        int ret;
+        if(flags & PARENT_WRITE)
+            ret = mprotect(addr,len,PROT_WRITE | PROT_READ);
+        else
+            ret = mprotect(addr,len,PROT_READ);
+        if(ret == -1) return ret;
+    }else{
+        // child process
+        int ret;
+        if(flags & CHILD_WRITE)
+            ret = mprotect(addr,len,PROT_WRITE | PROT_READ);
+        else
+            ret = mprotect(addr,len,PROT_READ);
+        if(ret == -1) return ret;
+    }
+
     return pid;
 }
 
@@ -112,35 +85,42 @@ int sfork_file(size_t len, unsigned int flags, void **paddr)
 
 int sfork(size_t len, unsigned int flags, void **paddr)
 {
+    if(len <= 0)
+        return -1;
+    if(!paddr)
+        return -1;
     if(!flags){
         printf("Atleast one of parent or child should have write permission\n");
         return -1;
     }
-
-    void* addr = mmap(NULL,len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SFORK, -1, 0);
-    *paddr = addr;
-    int direction = flags;
+    void *addr;
     
-    printf("%px\n",addr);
-    int fd = open("/dev/sfork_dev", O_RDWR);
-    write(fd,&addr,8);
+    if(flags & SFORK_POPULATE){
+        addr = mmap(NULL,len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SFORK | MAP_POPULATE, -1, 0);
+    }else{
+        addr = mmap(NULL,len, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SFORK, -1, 0);
+    }
+
+    *paddr = addr;
+
     int pid = fork();
-    return pid;
-
-    if(pid == 0) {
-
-        printf("Child PID: %d\n",getpid());
-        sleep(2);
-        write(fd,&addr,8);
-        printf("In the child process\n");
-        *(int*)addr = 20;
-        printf("Updated value from child_2:%d\n",*(int *)addr);
-    } else {
-        wait(NULL);
-        write(fd,&addr,8);
-        printf("In the parent process\n");
-        int value = *(int *)addr;
-        printf("Value from parent_1:%d\n",value);
+    
+    if(pid != 0){
+        // parent process
+        int ret;
+        if(flags & PARENT_WRITE)
+            ret = mprotect(addr,len,PROT_WRITE | PROT_READ);
+        else
+            ret = mprotect(addr,len,PROT_READ);
+        if(ret == -1) return ret;
+    }else{
+        // child process
+        int ret;
+        if(flags & CHILD_WRITE)
+            ret = mprotect(addr,len,PROT_WRITE | PROT_READ);
+        else
+            ret = mprotect(addr,len,PROT_READ);
+        if(ret == -1) return ret;
     }
     return pid;
 }
