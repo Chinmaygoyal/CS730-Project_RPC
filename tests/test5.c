@@ -30,43 +30,50 @@ int main(int argc, char* argv[])
 
     if(num == 1){
         // sfork_file
-        pid = sfork_file((n+1)*4096, PARENT_WRITE , &ptr); // 1 GB
+        pid = sfork_file((n+1), PARENT_WRITE , &ptr); // 1 GB
     }else if(num == 2){
         // sfork_populate
-        pid = sfork((n+1)*4096, PARENT_WRITE | SFORK_POPULATE , &ptr); // 1 GB
+        pid = sfork((n+1), CHILD_WRITE | PARENT_WRITE | SFORK_POPULATE , &ptr); // 1 GB
     }else if(num == 3){
         // sfork
-        pid = sfork((n+1)*4096, PARENT_WRITE, &ptr); // 1 GB
+        pid = sfork((n+1),  CHILD_WRITE | PARENT_WRITE, &ptr); // 1 GB
     }
     
     if(pid == 0){
         int *arr = (int *) ptr;
-        sleep(1);
-        while(arr[n] == 0);
         // child process
-        for(int i = 0;i<2;i++){
-            int pid_1 = fork();
+        int pid_1 = fork();
+
+        if(pid_1 == 0)
+        {
+            int sum = 0;
+            for(int i = 0;i<n;i++){
+                sum += arr[i];
+            }
+            printf("grandchild process id is: %d. The sum is: %d\n", getpid(), sum);
+        }
+        else
+        {
+            int sum = 0;
+            for(int i = 0;i<n;i++){
+                sum += arr[i];
+            }
+            printf("child process id is: %d. The sum is: %d\n", getpid(), sum);
         }
 
-        int sum = 0;
-        for(int i = 0;i<n;i++){
-            sum += arr[i];
-        }
-        printf("The current process id is: %d. The sum is: %d\n",getpid(), sum);
+        
     }else{
         int *arr = (int *) ptr;
         arr[n] = 0;
-        printf("Parent addr = %p\n", ptr);
-        
+        // printf("Parent addr = %p\n", ptr);
+
         for(int i = 0; i < n; i++)
             arr[i] = i;
-        
-        arr[n] = 1;
         
         printf("Parent: Computing sum\n");
         int sum = 0;
         for(int i = 0; i < n; i++)
             sum += arr[i];
-        printf("The parent process id is: %d. The sum is: %d\n",getpid(),sum);
+        printf("Parent process id is: %d. The sum is: %d\n", getpid(), sum);
     }
 }
