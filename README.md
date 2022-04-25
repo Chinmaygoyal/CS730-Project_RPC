@@ -11,17 +11,15 @@ memory construct. Hence, we will compare sfork with shared memory to study the
 effectiveness.
 
 ## Usage
-To build user libraries and tests:
+
+- In order to use the library first install the kernel code that is present in the [github repo](https://github.com/Prashant446/linux-5.10.89) and boot that kernel.
+- To build user libraries and tests:
 ```bash
 # in root of repo
 make
 ```
 
-Test binaries are generated in `bin/` directory.
-
-To build and load kernel module:
-```bash
-# inside the Module/ dir
-make
-sudo insmod $sfork.ko
-```
+- Test binaries are generated in `bin/` directory.
+- Tests are present in `tests` folder
+- Benchmark programs are present in `benchmark-tests` folder
+- Reports and the presentation files are present in `report` folder.
