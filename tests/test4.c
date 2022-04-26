@@ -1,12 +1,14 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <sfork.h>
 #include <unistd.h>
+#include <sys/shm.h> 
+#include <stdlib.h>
 #include <sys/wait.h>
+
+#define PAGE_SIZE 4096
 
 int main(int argc, char* argv[])
 {
-
     if(argc < 2){
         printf("Please tell which implementation of sfork to use\n");
         return 0;
@@ -14,48 +16,80 @@ int main(int argc, char* argv[])
 
     char *a = argv[1];
     int num = atoi(a);
-    if(num > 3){
+    if(num > 4){
         printf("Not a valid argument\n");
         return 0;
     }
 
+
     void *ptr;
-    int n = 1024*1024; // 1 MB
-    // int n = 64; // 256 MB
-    int pid;
+    int n = 5;
+    /*
+    * Create 8 child/grandchild processes with only the first being through sfork.
+    */
+    int pid, shmid;
 
     if(num == 1){
         // sfork_file
-        pid = sfork_file((n + 1)* sizeof(int), CHILD_WRITE , &ptr); // 1 GB
+        pid = sfork_file((n+1), PARENT_WRITE , &ptr); // 1 GB
     }else if(num == 2){
         // sfork_populate
-        pid = sfork((n + 1)* sizeof(int), CHILD_WRITE | SFORK_POPULATE , &ptr); // 1 GB
+        pid = sfork((n+1), CHILD_WRITE | PARENT_WRITE | SFORK_POPULATE , &ptr); // 1 GB
     }else if(num == 3){
         // sfork
-        pid = sfork((n + 1)* sizeof(int), CHILD_WRITE, &ptr); // 1 GB
+        pid = sfork((n+1),  CHILD_WRITE | PARENT_WRITE, &ptr); // 1 GB
+    }else if(num == 4){
+        shmid = shmget(IPC_PRIVATE, n, IPC_CREAT | 0600);
+        ptr = shmat(shmid, NULL, 0);
+        pid = fork();
     }
-    
 
     if(pid < 0)
     {
         printf("fork failed!\n");
         return -1;
     }
-    // sleep(4);
-    if(pid)
-    {
-        // parent
+
+    if(pid == 0){
         int *arr = (int *) ptr;
-        printf("Parent addr = %p\n", ptr);
+        sleep(1);
+        // child process
+        int pid_1 = fork();
+
+        if(pid_1 == 0)
+        {
+            int sum = 0;
+            for(int i = 0;i<n;i++){
+                sum += arr[i];
+            }
+            printf("grandchild process id is: %d. The sum is: %d\n", getpid(), sum);
+        }
+        else
+        {
+            int sum = 0;
+            for(int i = 0;i<n;i++){
+                sum += arr[i];
+            }
+            printf("child process id is: %d. The sum is: %d\n", getpid(), sum);
+        }
+        if(num == 4)
+            shmdt(ptr);
         
-        arr[0] = 100;
-    }
-    else
-    {
-        // Child process
+    }else{
         int *arr = (int *) ptr;
-        printf("Child addr = %p\n", ptr);
-        arr[0] = 100;
+        // printf("Parent addr = %p\n", ptr);
+
+        for(int i = 0; i < n; i++)
+            arr[i] = i;
+        
+        printf("Parent: Computing sum\n");
+        int sum = 0;
+        for(int i = 0; i < n; i++)
+            sum += arr[i];
+        printf("Parent process id is: %d. The sum is: %d\n", getpid(), sum);
+         if(num == 4) {
+            shmdt(ptr);
+            shmctl(shmid, IPC_RMID, NULL);
+        }
     }
-    return 0;
 }
