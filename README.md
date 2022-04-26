@@ -19,7 +19,35 @@ effectiveness.
 make
 ```
 
-- Test binaries are generated in `bin/` directory.
+- To run the tests:
+```bash
+    make
+    ./bin/[testname] [type]
+    # eg: ./bin/test1 2
+    # Type map:
+        # 1: "sfork_file",
+        # 2: "sfork_populate",
+        # 3: "sfork_lazy",
+        # 4: "shared_mem"
+```
+
+
+- To run the benchmarks:
+```bash
+    make
+    ./runtest.sh [name] [type] [size]
+    # eg: ./runtest.sh random 2 1024
+    # Type map:
+        # 1: "sfork_file",
+        # 2: "sfork_populate",
+        # 3: "sfork_lazy",
+        # 4: "shared_mem"
+    
+    # to generate plots:
+    python plot.py
+```
+
 - Tests are present in `tests` folder
 - Benchmark programs are present in `benchmark-tests` folder
+- Test and benchmark binaries are generated in `bin/` directory.
 - Reports and the presentation files are present in `report` folder.
