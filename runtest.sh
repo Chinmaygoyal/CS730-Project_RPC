@@ -28,6 +28,12 @@ then
     mkdir ${STATS_FOLDER}
 fi
 
-
-echo "Type: ${TYPE}"
-command time -f "%U\t%S\t%e\t${ARG}\t%X" ${BIN} ${TYPE} ${ARG} > /dev/null 2>> "${STATS_FOLDER}/${FILE}_${TYPE}.txt"
+# for TYPE in {3..4}
+# do
+    # echo "Type: ${TYPE}"
+for iter in {1..5}
+do
+    command time -f "%U\t%S\t%e\t${ARG}\t%X" ${BIN} ${TYPE} ${ARG} > /dev/null 2>> "${STATS_FOLDER}/${FILE}_${TYPE}.txt"
+    sleep 0.01
+done
+# done
