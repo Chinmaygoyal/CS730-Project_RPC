@@ -30,4 +30,4 @@ fi
 
 
 echo "Type: ${TYPE}"
-command time -f "%U\t%S\t%e\t${ARG}\t%X" ${BIN} ${TYPE} ${ARG} > /dev/null 2>> "${STATS_FOLDER}/${FILE}_${TYPE}.txt"
+command time -f "%U\t%S\t%e\t${ARG}\t%X" ${BIN} ${TYPE} ${ARG} 2>> "${STATS_FOLDER}/${FILE}_${TYPE}.txt"
