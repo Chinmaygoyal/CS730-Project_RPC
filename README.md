@@ -51,3 +51,6 @@ make
 - Benchmark programs are present in `benchmark-tests` folder
 - Test and benchmark binaries are generated in `bin/` directory.
 - Reports and the presentation files are present in `report` folder.
+
+#Report
+All the reports and the presentations are present in `report` folder.
