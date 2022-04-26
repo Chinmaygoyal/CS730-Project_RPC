@@ -52,5 +52,5 @@ make
 - Test and benchmark binaries are generated in `bin/` directory.
 - Reports and the presentation files are present in `report` folder.
 
-#Report
+## Report
 All the reports and the presentations are present in `report` folder.
